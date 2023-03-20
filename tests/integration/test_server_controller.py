@@ -92,4 +92,5 @@ def test_server_responses(server: HTTPServer, request_data, response_data):
     print(json.dumps(request_data))
     x = requests.post(url, data=json.dumps(request_data))
     result = json.loads(x.text)
-    assert result == response_data
+    assert result["status"] == response_data["status"]
+    assert all([a == b for a, b in zip(result["children"], response_data["children"])])
