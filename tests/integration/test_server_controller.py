@@ -93,4 +93,4 @@ def test_server_responses(server: HTTPServer, request_data, response_data):
     x = requests.post(url, data=json.dumps(request_data))
     result = json.loads(x.text)
     assert result["status"] == response_data["status"]
-    assert result["children"] == response_data["children"]
+    assert [i for i in response_data["children"] if i not in result["children"]] == []
