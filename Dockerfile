@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM public.ecr.aws/ubuntu/ubuntu:22.04
 ARG VERSION
 
 ENV TZ=UTC
@@ -25,4 +25,4 @@ RUN set -eux; \
 COPY . /app 
 
 EXPOSE 80
-CMD ["python3", "server.py", "--port", "80"]
+CMD ["python3", "main.py"]
