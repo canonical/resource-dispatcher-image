@@ -12,11 +12,11 @@ from http.server import HTTPServer
 import pytest
 import requests
 
-from src.server import server_factory
+from resource_dispatcher.src.server import server_factory
 
 PORT = 0  # HTTPServer randomly assigns the port to a free port
 LABEL = "test.label"
-FOLDER = "./tests/test_data_folder"
+FOLDER = "./resource_dispatcher/tests/test_data_folder"
 
 CORRECT_NAMESPACE_REQ = {
     "parent": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
@@ -87,10 +87,8 @@ def test_server_responses(server: HTTPServer, request_data, response_data):
     """Test if server returns desired Kubernetes objects for given namespaces."""
     server_obj = server
     url = f"http://{server_obj.server_address[0]}:{str(server_obj.server_address[1])}"
-    print("url: ", url)
-    print("data")
-    print(json.dumps(request_data))
-    x = requests.post(url, data=json.dumps(request_data))
-    result = json.loads(x.text)
+    response = requests.post(url, data=json.dumps(request_data))
+    result = json.loads(response.text)
+    assert response.status_code == 200
     assert result["status"] == response_data["status"]
     assert [i for i in response_data["children"] if i not in result["children"]] == []

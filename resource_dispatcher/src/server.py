@@ -12,6 +12,7 @@ from pathlib import Path
 
 import yaml
 from jinja2 import Template
+from jinja2.exceptions import TemplateSyntaxError
 
 from .log import setup_custom_logger
 
@@ -50,14 +51,21 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                 "resources-ready": str(len(children["Secret.v1"]) == desired_secret_count)
             }
 
-            desired_resources += generate_manifests(folder, context)
+            try:
+                desired_resources += generate_manifests(folder, context)
+            except TemplateSyntaxError as e:
+                raise e
             return {"status": desired_status, "children": desired_resources}
 
         def do_POST(self):  # noqa: N802
             """Serve the sync() function as a JSON webhook."""
             observed = json.loads(self.rfile.read(int(self.headers.get("content-length"))))
-            desired = self.sync(observed["parent"], observed["children"])
-
+            try:
+                desired = self.sync(observed["parent"], observed["children"])
+            except TemplateSyntaxError as e:
+                logger.error(f"generate_manifests: {e}")
+                self.send_error(500, f"Problem with manifest templates {e}")
+                return
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
@@ -72,7 +80,10 @@ def generate_manifests(templates_folder: str, context: dict) -> list[dict]:
     logger.info(f"found files {template_files}")
     manifests = []
     for template_file in template_files:
-        template = Template(Path(template_file).read_text())
+        try:
+            template = Template(Path(template_file).read_text())
+        except TemplateSyntaxError as e:
+            raise e
         rendered_template = template.render(**context)
         tmp_yaml = yaml.safe_load(rendered_template)
         manifests.append(tmp_yaml)

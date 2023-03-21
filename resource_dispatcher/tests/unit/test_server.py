@@ -8,17 +8,21 @@
 from http.server import HTTPServer
 from unittest.mock import MagicMock, patch
 
-from src.server import generate_manifests, run_server, server_factory
+import pytest
+from jinja2.exceptions import TemplateSyntaxError
+
+from resource_dispatcher.src.server import generate_manifests, run_server, server_factory
 
 PORT = 1234  # HTTPServer randomly assigns the port to a free port
 LABEL = "test.label"
-FOLDER = "./tests/test_data_folder"
+FOLDER = "./resource_dispatcher/tests/test_data_folder"
+FOLDER_CORRUPTED = "./resource_dispatcher/tests/test_data_folder_corrupted"
 
 
 class TestServer:
     """Unit test class for server module unit tests."""
 
-    @patch("src.server.server_factory")
+    @patch("resource_dispatcher.src.server.server_factory")
     def test_run_server(self, server_factory: MagicMock):
         """Test run_server function."""
         run_server(PORT, LABEL, FOLDER)
@@ -36,3 +40,8 @@ class TestServer:
         manifests = generate_manifests(FOLDER, context={"namespace": "namespace"})
         assert len(manifests) == 2
         assert manifests[0]["metadata"]["namespace"] == "namespace"
+
+    def test_generate_manifests_failure(self):
+        """Test if function generates manifests for example folder."""
+        with pytest.raises(TemplateSyntaxError):
+            generate_manifests(FOLDER_CORRUPTED, context={"namespace": "namespace"})
