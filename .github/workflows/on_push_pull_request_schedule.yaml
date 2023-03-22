@@ -1,0 +1,13 @@
+name: On Pull Request
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 14 * * 1"
+
+jobs:
+  integrate:
+    name: Lint + Unit + Integration tests
+    uses: ./.github/workflows/integrate.yaml
