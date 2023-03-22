@@ -53,11 +53,10 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                 desired_resources += generate_manifests(folder, namespace)
             except ParserError as e:
                 raise e
-            return {
-                "status": desired_status,
-                "children": desired_resources,
-                "resyncAfterSeconds": 10,
-            }
+            resync_after = (
+                {"resyncAfterSeconds": 10} if desired_status["resources-ready"] == "False" else {}
+            )
+            return {"status": desired_status, "children": desired_resources, **resync_after}
 
         def do_POST(self):  # noqa: N802
             """Serve the sync() function as a JSON webhook."""
