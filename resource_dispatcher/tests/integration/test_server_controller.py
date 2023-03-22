@@ -25,6 +25,13 @@ CORRECT_NAMESPACE_REQ = {
     },
 }
 
+CORRECT_NAMESPACE_REQ_NO_RESYNC = {
+    "parent": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
+    "children": {
+        "Secret.v1": [{}],
+    },
+}
+
 WRONG_NAMESPACE_REQ = {
     "parent": {"metadata": {"name": "someName", "labels": {"wrong.namespace": "true"}}},
     "children": {
@@ -34,6 +41,25 @@ WRONG_NAMESPACE_REQ = {
 
 CORRECT_NAMESPACE_RESP = {
     "status": {"resources-ready": "False"},
+    "children": [
+        {
+            "apiVersion": "v1",
+            "kind": "Secret",
+            "metadata": {"name": "mlpipeline-minio-artifact2", "namespace": "someName"},
+            "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Secret",
+            "metadata": {"name": "mlpipeline-minio-artifact", "namespace": "someName"},
+            "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
+        },
+    ],
+    "resyncAfterSeconds": 10,
+}
+
+CORRECT_NAMESPACE_RESP_NO_RESYNC = {
+    "status": {"resources-ready": "True"},
     "children": [
         {
             "apiVersion": "v1",
@@ -71,13 +97,14 @@ def server():
 
 
 @pytest.mark.parametrize(
-    "request_data, response_data",
+    "request_data, response_data, resync",
     [
-        (CORRECT_NAMESPACE_REQ, CORRECT_NAMESPACE_RESP),
-        (WRONG_NAMESPACE_REQ, WRONG_NAMESPACE_RESP),
+        (CORRECT_NAMESPACE_REQ, CORRECT_NAMESPACE_RESP, True),
+        (WRONG_NAMESPACE_REQ, WRONG_NAMESPACE_RESP, False),
+        (CORRECT_NAMESPACE_REQ_NO_RESYNC, CORRECT_NAMESPACE_RESP_NO_RESYNC, False),
     ],
 )
-def test_server_responses(server: HTTPServer, request_data, response_data):
+def test_server_responses(server: HTTPServer, request_data, response_data, resync):
     """Test if server returns desired Kubernetes objects for given namespaces."""
     server_obj = server
     url = f"http://{server_obj.server_address[0]}:{str(server_obj.server_address[1])}"
@@ -86,3 +113,4 @@ def test_server_responses(server: HTTPServer, request_data, response_data):
     assert response.status_code == 200
     assert result["status"] == response_data["status"]
     assert [i for i in response_data["children"] if i not in result["children"]] == []
+    assert ("resyncAfterSeconds" in result) == resync
