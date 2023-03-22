@@ -22,9 +22,6 @@ CORRECT_NAMESPACE_REQ = {
     "parent": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
     "children": {
         "Secret.v1": [],
-        "ConfigMap.v1": [],
-        "Deployment.apps/v1": [],
-        "Service.v1": [],
     },
 }
 
@@ -32,9 +29,6 @@ WRONG_NAMESPACE_REQ = {
     "parent": {"metadata": {"name": "someName", "labels": {"wrong.namespace": "true"}}},
     "children": {
         "Secret.v1": [],
-        "ConfigMap.v1": [],
-        "Deployment.apps/v1": [],
-        "Service.v1": [],
     },
 }
 
