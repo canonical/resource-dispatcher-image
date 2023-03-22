@@ -8,11 +8,9 @@
 import glob
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from pathlib import Path
 
 import yaml
-from jinja2 import Template
-from jinja2.exceptions import TemplateSyntaxError
+from yaml.parser import ParserError
 
 from .log import setup_custom_logger
 
@@ -36,7 +34,7 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
         def sync(self, parent, children):
             """Return manifests which needs to be created for given state."""
             logger.info(f"Got new request with parent: {parent} and children {children}")
-            context = {"namespace": parent.get("metadata", {}).get("name")}
+            namespace = parent.get("metadata", {}).get("name")
             pipeline_enabled = parent.get("metadata", {}).get("labels", {}).get(label)
 
             if pipeline_enabled != "true":
@@ -52,8 +50,8 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
             }
 
             try:
-                desired_resources += generate_manifests(folder, context)
-            except TemplateSyntaxError as e:
+                desired_resources += generate_manifests(folder, namespace)
+            except ParserError as e:
                 raise e
             return {"status": desired_status, "children": desired_resources}
 
@@ -62,9 +60,9 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
             observed = json.loads(self.rfile.read(int(self.headers.get("content-length"))))
             try:
                 desired = self.sync(observed["parent"], observed["children"])
-            except TemplateSyntaxError as e:
+            except ParserError as e:
                 logger.error(f"generate_manifests: {e}")
-                self.send_error(500, f"Problem with manifest templates {e}")
+                self.send_error(500, "Problem with manifest templates")
                 return
             self.send_response(200)
             self.send_header("Content-type", "application/json")
@@ -74,17 +72,17 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
     return HTTPServer((url, int(controller_port)), Controller)
 
 
-def generate_manifests(templates_folder: str, context: dict) -> list[dict]:
+def generate_manifests(manifest_folder: str, namespace: str) -> list[dict]:
     """For each file in templates_folder generate a yaml with populated context."""
-    template_files = glob.glob(f"{templates_folder}/*.j2")
-    logger.info(f"found files {template_files}")
+    manifest_files = glob.glob(f"{manifest_folder}/*.yaml")
+    logger.info(f"found files {manifest_files}")
     manifests = []
-    for template_file in template_files:
-        try:
-            template = Template(Path(template_file).read_text())
-        except TemplateSyntaxError as e:
-            raise e
-        rendered_template = template.render(**context)
-        tmp_yaml = yaml.safe_load(rendered_template)
-        manifests.append(tmp_yaml)
+    for manifest_file in manifest_files:
+        with open(manifest_file) as f:
+            try:
+                manifest = yaml.safe_load(f)
+            except ParserError as e:
+                raise e
+        manifest["metadata"]["namespace"] = namespace
+        manifests.append(manifest)
     return manifests

@@ -9,7 +9,7 @@ from http.server import HTTPServer
 from unittest.mock import MagicMock, patch
 
 import pytest
-from jinja2.exceptions import TemplateSyntaxError
+from yaml.parser import ParserError
 
 from resource_dispatcher.src.server import generate_manifests, run_server, server_factory
 
@@ -37,11 +37,11 @@ class TestServer:
 
     def test_generate_manifests(self):
         """Test if function generates manifests for example folder."""
-        manifests = generate_manifests(FOLDER, context={"namespace": "namespace"})
+        manifests = generate_manifests(FOLDER, namespace="namespace")
         assert len(manifests) == 2
         assert manifests[0]["metadata"]["namespace"] == "namespace"
 
     def test_generate_manifests_failure(self):
         """Test if function generates manifests for example folder."""
-        with pytest.raises(TemplateSyntaxError):
-            generate_manifests(FOLDER_CORRUPTED, context={"namespace": "namespace"})
+        with pytest.raises(ParserError):
+            generate_manifests(FOLDER_CORRUPTED, namespace="namespace")
