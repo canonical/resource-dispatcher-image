@@ -43,7 +43,7 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                 )
                 return {"status": {}, "children": []}
 
-            desired_secret_count = 1
+            desired_secret_count = len(glob.glob(f"{folder}/*.yaml"))
             desired_resources = []
             desired_status = {
                 "resources-ready": str(len(children["Secret.v1"]) == desired_secret_count)
