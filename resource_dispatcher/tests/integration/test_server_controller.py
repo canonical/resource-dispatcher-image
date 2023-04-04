@@ -28,7 +28,7 @@ CORRECT_NAMESPACE_REQ = {
 CORRECT_NAMESPACE_REQ_NO_RESYNC = {
     "parent": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
     "children": {
-        "Secret.v1": [{}],
+        "Secret.v1": [{}, {}],
     },
 }
 
