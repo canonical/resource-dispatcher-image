@@ -43,10 +43,14 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                 )
                 return {"status": {}, "children": []}
 
-            desired_secret_count = len(glob.glob(f"{folder}/*.yaml"))
+            desired_secrets_count = len(glob.glob(f"{folder}/secrets/*.yaml"))
+            desired_svc_accounts_count = len(glob.glob(f"{folder}/service-accounts/*.yaml"))
             desired_resources = []
             desired_status = {
-                "resources-ready": str(len(children["Secret.v1"]) == desired_secret_count)
+                "resources-ready": str(
+                    len(children["Secret.v1"]) == desired_secrets_count
+                    and len(children["ServiceAccount.v1"]) == desired_svc_accounts_count
+                )
             }
 
             try:
@@ -77,7 +81,7 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
 
 def generate_manifests(manifest_folder: str, namespace: str) -> list[dict]:
     """For each file in templates_folder generate a yaml with populated context."""
-    manifest_files = glob.glob(f"{manifest_folder}/*.yaml")
+    manifest_files = glob.glob(f"{manifest_folder}/*/*.yaml")
     logger.info(f"found files {manifest_files}")
     manifests = []
     for manifest_file in manifest_files:
