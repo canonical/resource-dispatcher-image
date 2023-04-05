@@ -57,6 +57,7 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                 elif resource["kind"] == "ServiceAccount":
                     desired_svc_accounts_count += 1
 
+            # Just compares number of presented with expected manifests its not comparing contents
             desired_status = {
                 "resources-ready": str(
                     len(children["Secret.v1"]) == desired_secrets_count
