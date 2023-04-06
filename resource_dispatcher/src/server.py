@@ -43,16 +43,27 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                 )
                 return {"status": {}, "children": []}
 
-            desired_secret_count = len(glob.glob(f"{folder}/*.yaml"))
+            desired_secrets_count = 0
+            desired_svc_accounts_count = 0
             desired_resources = []
-            desired_status = {
-                "resources-ready": str(len(children["Secret.v1"]) == desired_secret_count)
-            }
-
             try:
                 desired_resources += generate_manifests(folder, namespace)
             except ParserError as e:
                 raise e
+
+            for resource in desired_resources:
+                if resource["kind"] == "Secret":
+                    desired_secrets_count += 1
+                elif resource["kind"] == "ServiceAccount":
+                    desired_svc_accounts_count += 1
+
+            # Just compares number of presented with expected manifests its not comparing contents
+            desired_status = {
+                "resources-ready": str(
+                    len(children["Secret.v1"]) == desired_secrets_count
+                    and len(children["ServiceAccount.v1"]) == desired_svc_accounts_count
+                )
+            }
             resync_after = (
                 {"resyncAfterSeconds": 10} if desired_status["resources-ready"] == "False" else {}
             )
@@ -77,7 +88,7 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
 
 def generate_manifests(manifest_folder: str, namespace: str) -> list[dict]:
     """For each file in templates_folder generate a yaml with populated context."""
-    manifest_files = glob.glob(f"{manifest_folder}/*.yaml")
+    manifest_files = glob.glob(f"{manifest_folder}/**/*.yaml")
     logger.info(f"found files {manifest_files}")
     manifests = []
     for manifest_file in manifest_files:

@@ -20,16 +20,12 @@ FOLDER = "./resource_dispatcher/tests/test_data_folder"
 
 CORRECT_NAMESPACE_REQ = {
     "parent": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
-    "children": {
-        "Secret.v1": [],
-    },
+    "children": {"Secret.v1": [], "ServiceAccount.v1": []},
 }
 
 CORRECT_NAMESPACE_REQ_NO_RESYNC = {
     "parent": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
-    "children": {
-        "Secret.v1": [{}, {}],
-    },
+    "children": {"Secret.v1": [{}, {}], "ServiceAccount.v1": [{}]},
 }
 
 WRONG_NAMESPACE_REQ = {
@@ -54,6 +50,12 @@ CORRECT_NAMESPACE_RESP = {
             "metadata": {"name": "mlpipeline-minio-artifact", "namespace": "someName"},
             "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
         },
+        {
+            "apiVersion": "v1",
+            "kind": "ServiceAccount",
+            "metadata": {"name": "sa", "namespace": "someName"},
+            "secrets": [{"name": "s3creds"}],
+        },
     ],
     "resyncAfterSeconds": 10,
 }
@@ -72,6 +74,12 @@ CORRECT_NAMESPACE_RESP_NO_RESYNC = {
             "kind": "Secret",
             "metadata": {"name": "mlpipeline-minio-artifact", "namespace": "someName"},
             "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "ServiceAccount",
+            "metadata": {"name": "sa", "namespace": "someName"},
+            "secrets": [{"name": "s3creds"}],
         },
     ],
 }
