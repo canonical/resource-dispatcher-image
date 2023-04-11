@@ -18,70 +18,106 @@ PORT = 0  # HTTPServer randomly assigns the port to a free port
 LABEL = "test.label"
 FOLDER = "./resource_dispatcher/tests/test_data_folder"
 
+EXPECTED_CHILDREN = [
+    {
+        "apiVersion": "v1",
+        "kind": "Secret",
+        "metadata": {"name": "mlpipeline-minio-artifact2", "namespace": "someName"},
+        "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
+    },
+    {
+        "apiVersion": "v1",
+        "kind": "Secret",
+        "metadata": {"name": "mlpipeline-minio-artifact", "namespace": "someName"},
+        "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
+    },
+    {
+        "apiVersion": "v1",
+        "kind": "ServiceAccount",
+        "metadata": {"name": "sa", "namespace": "someName"},
+        "secrets": [{"name": "s3creds"}],
+    },
+    {
+        "apiVersion": "kubeflow.org/v1alpha1",
+        "kind": "PodDefault",
+        "metadata": {"name": "mlflow-server-minio", "namespace": "someName"},
+        "spec": {
+            "desc": "Allow access to MLFlow",
+            "env": [
+                {"name": "MLFLOW_S3_ENDPOINT_URL", "value": "http://minio.kubeflow:9000"},
+                {
+                    "name": "MLFLOW_TRACKING_URI",
+                    "value": "http://mlflow-server.kubeflow.svc.cluster.local:5000",
+                },
+            ],
+            "selector": {"matchLabels": {"mlflow-server-minio": "true"}},
+        },
+    },
+    {
+        "apiVersion": "kubeflow.org/v1alpha1",
+        "kind": "PodDefault",
+        "metadata": {"name": "access-minio", "namespace": "someName"},
+        "spec": {
+            "desc": "Allow access to Minio",
+            "selector": {"matchLabels": {"access-minio": "true"}},
+            "env": [
+                {
+                    "name": "AWS_ACCESS_KEY_ID",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": "mlpipeline-minio-artifact",
+                            "key": "accesskey",
+                            "optional": False,
+                        }
+                    },
+                },
+                {
+                    "name": "AWS_SECRET_ACCESS_KEY",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": "mlpipeline-minio-artifact",
+                            "key": "secretkey",
+                            "optional": False,
+                        }
+                    },
+                },
+                {
+                    "name": "MINIO_ENDPOINT_URL",
+                    "value": "http://minio.kubeflow.svc.cluster.local:9000",
+                },
+            ],
+        },
+    },
+]
+
 CORRECT_NAMESPACE_REQ = {
     "parent": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
-    "children": {"Secret.v1": [], "ServiceAccount.v1": []},
+    "children": {"Secret.v1": [], "ServiceAccount.v1": [], "PodDefault.kubeflow.org/v1alpha1": []},
 }
 
 CORRECT_NAMESPACE_REQ_NO_RESYNC = {
     "parent": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
-    "children": {"Secret.v1": [{}, {}], "ServiceAccount.v1": [{}]},
+    "children": {
+        "Secret.v1": [{}, {}],
+        "ServiceAccount.v1": [{}],
+        "PodDefault.kubeflow.org/v1alpha1": [{}, {}],
+    },
 }
 
 WRONG_NAMESPACE_REQ = {
     "parent": {"metadata": {"name": "someName", "labels": {"wrong.namespace": "true"}}},
-    "children": {
-        "Secret.v1": [],
-    },
+    "children": {"Secret.v1": [], "ServiceAccount.v1": [], "PodDefault.kubeflow.org/v1alpha1": []},
 }
 
 CORRECT_NAMESPACE_RESP = {
     "status": {"resources-ready": "False"},
-    "children": [
-        {
-            "apiVersion": "v1",
-            "kind": "Secret",
-            "metadata": {"name": "mlpipeline-minio-artifact2", "namespace": "someName"},
-            "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
-        },
-        {
-            "apiVersion": "v1",
-            "kind": "Secret",
-            "metadata": {"name": "mlpipeline-minio-artifact", "namespace": "someName"},
-            "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
-        },
-        {
-            "apiVersion": "v1",
-            "kind": "ServiceAccount",
-            "metadata": {"name": "sa", "namespace": "someName"},
-            "secrets": [{"name": "s3creds"}],
-        },
-    ],
+    "children": EXPECTED_CHILDREN,
     "resyncAfterSeconds": 10,
 }
 
 CORRECT_NAMESPACE_RESP_NO_RESYNC = {
     "status": {"resources-ready": "True"},
-    "children": [
-        {
-            "apiVersion": "v1",
-            "kind": "Secret",
-            "metadata": {"name": "mlpipeline-minio-artifact2", "namespace": "someName"},
-            "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
-        },
-        {
-            "apiVersion": "v1",
-            "kind": "Secret",
-            "metadata": {"name": "mlpipeline-minio-artifact", "namespace": "someName"},
-            "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
-        },
-        {
-            "apiVersion": "v1",
-            "kind": "ServiceAccount",
-            "metadata": {"name": "sa", "namespace": "someName"},
-            "secrets": [{"name": "s3creds"}],
-        },
-    ],
+    "children": EXPECTED_CHILDREN,
 }
 
 WRONG_NAMESPACE_RESP = {"status": {}, "children": []}

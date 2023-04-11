@@ -45,6 +45,7 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
 
             desired_secrets_count = 0
             desired_svc_accounts_count = 0
+            desired_pod_defaults_count = 0
             desired_resources = []
             try:
                 desired_resources += generate_manifests(folder, namespace)
@@ -56,12 +57,16 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                     desired_secrets_count += 1
                 elif resource["kind"] == "ServiceAccount":
                     desired_svc_accounts_count += 1
+                elif resource["kind"] == "PodDefault":
+                    desired_pod_defaults_count += 1
 
             # Just compares number of presented with expected manifests its not comparing contents
             desired_status = {
                 "resources-ready": str(
                     len(children["Secret.v1"]) == desired_secrets_count
                     and len(children["ServiceAccount.v1"]) == desired_svc_accounts_count
+                    and len(children["PodDefault.kubeflow.org/v1alpha1"])
+                    == desired_pod_defaults_count
                 )
             }
             resync_after = (
