@@ -18,7 +18,7 @@ PORT = 0  # HTTPServer randomly assigns the port to a free port
 LABEL = "test.label"
 FOLDER = "./resource_dispatcher/tests/test_data_folder"
 
-EXPECTED_CHILDREN = [
+EXPECTED_ATTACHMENTS = [
     {
         "apiVersion": "v1",
         "kind": "Secret",
@@ -91,13 +91,17 @@ EXPECTED_CHILDREN = [
 ]
 
 CORRECT_NAMESPACE_REQ = {
-    "parent": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
-    "children": {"Secret.v1": [], "ServiceAccount.v1": [], "PodDefault.kubeflow.org/v1alpha1": []},
+    "object": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
+    "attachments": {
+        "Secret.v1": [],
+        "ServiceAccount.v1": [],
+        "PodDefault.kubeflow.org/v1alpha1": [],
+    },
 }
 
 CORRECT_NAMESPACE_REQ_NO_RESYNC = {
-    "parent": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
-    "children": {
+    "object": {"metadata": {"name": "someName", "labels": {LABEL: "true"}}},
+    "attachments": {
         "Secret.v1": [{}, {}],
         "ServiceAccount.v1": [{}],
         "PodDefault.kubeflow.org/v1alpha1": [{}, {}],
@@ -105,22 +109,26 @@ CORRECT_NAMESPACE_REQ_NO_RESYNC = {
 }
 
 WRONG_NAMESPACE_REQ = {
-    "parent": {"metadata": {"name": "someName", "labels": {"wrong.namespace": "true"}}},
-    "children": {"Secret.v1": [], "ServiceAccount.v1": [], "PodDefault.kubeflow.org/v1alpha1": []},
+    "object": {"metadata": {"name": "someName", "labels": {"wrong.namespace": "true"}}},
+    "attachments": {
+        "Secret.v1": [],
+        "ServiceAccount.v1": [],
+        "PodDefault.kubeflow.org/v1alpha1": [],
+    },
 }
 
 CORRECT_NAMESPACE_RESP = {
     "status": {"resources-ready": "False"},
-    "children": EXPECTED_CHILDREN,
+    "attachments": EXPECTED_ATTACHMENTS,
     "resyncAfterSeconds": 10,
 }
 
 CORRECT_NAMESPACE_RESP_NO_RESYNC = {
     "status": {"resources-ready": "True"},
-    "children": EXPECTED_CHILDREN,
+    "attachments": EXPECTED_ATTACHMENTS,
 }
 
-WRONG_NAMESPACE_RESP = {"status": {}, "children": []}
+WRONG_NAMESPACE_RESP = {"status": {}, "attachments": []}
 
 
 @pytest.fixture(
@@ -156,5 +164,5 @@ def test_server_responses(server: HTTPServer, request_data, response_data, resyn
     result = json.loads(response.text)
     assert response.status_code == 200
     assert result["status"] == response_data["status"]
-    assert [i for i in response_data["children"] if i not in result["children"]] == []
+    assert [i for i in response_data["attachments"] if i not in result["attachments"]] == []
     assert ("resyncAfterSeconds" in result) == resync

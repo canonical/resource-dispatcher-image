@@ -72,13 +72,17 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
             resync_after = (
                 {"resyncAfterSeconds": 10} if desired_status["resources-ready"] == "False" else {}
             )
-            return {"status": desired_status, "children": desired_resources, **resync_after}
+            return {
+                "status": desired_status,
+                "attachments": desired_resources,
+                **resync_after,
+            }
 
         def do_POST(self):  # noqa: N802
             """Serve the sync() function as a JSON webhook."""
             observed = json.loads(self.rfile.read(int(self.headers.get("content-length"))))
             try:
-                desired = self.sync(observed["parent"], observed["children"])
+                desired = self.sync(observed["object"], observed["attachments"])
             except ParserError as e:
                 logger.error(f"generate_manifests: {e}")
                 self.send_error(500, "Problem with manifest templates")
