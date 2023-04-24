@@ -31,9 +31,8 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
     """Return an HTTPServer populated with Handler with customised settings."""
 
     class Controller(BaseHTTPRequestHandler):
-        def sync(self, parent, children):
+        def sync(self, parent, attachments):
             """Return manifests which needs to be created for given state."""
-            logger.info(f"Got new request with parent: {parent} and children {children}")
             namespace = parent.get("metadata", {}).get("name")
             pipeline_enabled = parent.get("metadata", {}).get("labels", {}).get(label)
 
@@ -41,7 +40,7 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                 logger.info(
                     f"Namespace not in scope, no action taken (metadata.labels.{label} = {pipeline_enabled}, must be 'true')"  # noqa: E501
                 )
-                return {"status": {}, "children": []}
+                return {"status": {}, "attachments": []}
 
             desired_secrets_count = 0
             desired_svc_accounts_count = 0
@@ -63,22 +62,27 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
             # Just compares number of presented with expected manifests its not comparing contents
             desired_status = {
                 "resources-ready": str(
-                    len(children["Secret.v1"]) == desired_secrets_count
-                    and len(children["ServiceAccount.v1"]) == desired_svc_accounts_count
-                    and len(children["PodDefault.kubeflow.org/v1alpha1"])
+                    len(attachments["Secret.v1"]) == desired_secrets_count
+                    and len(attachments["ServiceAccount.v1"]) == desired_svc_accounts_count
+                    and len(attachments["PodDefault.kubeflow.org/v1alpha1"])
                     == desired_pod_defaults_count
                 )
             }
             resync_after = (
                 {"resyncAfterSeconds": 10} if desired_status["resources-ready"] == "False" else {}
             )
-            return {"status": desired_status, "children": desired_resources, **resync_after}
+            return {
+                "status": desired_status,
+                "attachments": desired_resources,
+                **resync_after,
+            }
 
         def do_POST(self):  # noqa: N802
             """Serve the sync() function as a JSON webhook."""
             observed = json.loads(self.rfile.read(int(self.headers.get("content-length"))))
+            logger.info(f"Request is  {observed}")
             try:
-                desired = self.sync(observed["parent"], observed["children"])
+                desired = self.sync(observed["object"], observed["attachments"])
             except ParserError as e:
                 logger.error(f"generate_manifests: {e}")
                 self.send_error(500, "Problem with manifest templates")
