@@ -106,6 +106,10 @@ def generate_manifests(manifest_folder: str, namespace: str) -> list[dict]:
                 manifest = yaml.safe_load(f)
             except ParserError as e:
                 raise e
-        manifest["metadata"]["namespace"] = namespace
-        manifests.append(manifest)
+        if 'namespace' in manifest["metadata"]:
+            if manifest["metadata"]["namespace"] == namespace:
+                manifests.append(manifest)
+        else:
+            manifest["metadata"]["namespace"] = namespace
+            manifests.append(manifest)
     return manifests
