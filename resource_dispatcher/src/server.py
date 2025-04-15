@@ -45,6 +45,8 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
             desired_secrets_count = 0
             desired_svc_accounts_count = 0
             desired_pod_defaults_count = 0
+            desired_roles_count = 0
+            desired_rolebindings_count = 0
             desired_resources = []
             try:
                 desired_resources += generate_manifests(folder, namespace)
@@ -58,6 +60,10 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                     desired_svc_accounts_count += 1
                 elif resource["kind"] == "PodDefault":
                     desired_pod_defaults_count += 1
+                elif resource["kind"] == "Role":
+                    desired_roles_count += 1
+                elif resource["kind"] == "RoleBinding":
+                    desired_rolebindings_count += 1
 
             # Just compares number of presented with expected manifests its not comparing contents
             desired_status = {
@@ -66,6 +72,10 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                     and len(attachments["ServiceAccount.v1"]) == desired_svc_accounts_count
                     and len(attachments["PodDefault.kubeflow.org/v1alpha1"])
                     == desired_pod_defaults_count
+                    and len(attachments["Role.rbac.authorization.k8s.io/v1"])
+                    == desired_roles_count
+                    and len(attachments["RoleBinding.rbac.authorization.k8s.io/v1"])
+                    == desired_rolebindings_count
                 )
             }
             resync_after = (
@@ -110,6 +120,12 @@ def generate_manifests(manifest_folder: str, namespace: str) -> list[dict]:
             if manifest["metadata"]["namespace"] == namespace:
                 manifests.append(manifest)
         else:
+            # For RoleBindings, add namespace to subjects if they are ServiceAccounts
+            if manifest["kind"] == "RoleBinding":
+                if "subjects" in manifest:
+                    for subject in manifest.get("subjects", []):
+                        if subject.get("kind") == "ServiceAccount" and "namespace" not in subject:
+                            subject["namespace"] = namespace
             manifest["metadata"]["namespace"] = namespace
             manifests.append(manifest)
     return manifests
