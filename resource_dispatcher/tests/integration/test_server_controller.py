@@ -91,7 +91,11 @@ EXPECTED_ATTACHMENTS = [
     {
         "apiVersion": "rbac.authorization.k8s.io/v1",
         "kind": "Role",
-        "metadata": {"name": "test-role", "labels": {" user.kubeflow.org/enabled": "true"}},
+        "metadata": {
+            "name": "test-role",
+            "labels": {"user.kubeflow.org/enabled": "true"},
+            "namespace": "someName",
+        },
         "rules": [
             {
                 "apiGroups": [""],
@@ -103,7 +107,11 @@ EXPECTED_ATTACHMENTS = [
     {
         "apiVersion": "rbac.authorization.k8s.io/v1",
         "kind": "RoleBinding",
-        "metadata": {"name": "test-rolebinding", "labels": {"user.kubeflow.org/enabled": "true"}},
+        "metadata": {
+            "name": "test-rolebinding",
+            "labels": {"user.kubeflow.org/enabled": "true"},
+            "namespace": "someName",
+        },
         "subjects": [{"kind": "ServiceAccount", "name": "seracc"}],
         "roleRef": {"apiGroup": "rbac.authorization.k8s.io", "kind": "Role", "name": "test-role"},
     },
