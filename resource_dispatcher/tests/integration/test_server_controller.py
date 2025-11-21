@@ -189,7 +189,9 @@ def test_server_responses(server: HTTPServer, request_data, response_data, resyn
     result = json.loads(response.text)
     import logging
 
-    logging.error(result)
+    for at in result["attachments"]:
+        logging.error(at)
+
     assert response.status_code == 200
     assert result["status"] == response_data["status"]
     assert [i for i in response_data["attachments"] if i not in result["attachments"]] == []
