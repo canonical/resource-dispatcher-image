@@ -88,6 +88,25 @@ EXPECTED_ATTACHMENTS = [
             ],
         },
     },
+    {
+        "apiVersion": "rbac.authorization.k8s.io/v1",
+        "kind": "Role",
+        "metadata": {"name": "test-role", "labels": {" user.kubeflow.org/enabled": "true"}},
+        "rules": [
+            {
+                "apiGroups": [""],
+                "resources": ["secrets"],
+                "verbs": ["get", "list", "watch", "create", "update", "patch", "delete"],
+            }
+        ],
+    },
+    {
+        "apiVersion": "rbac.authorization.k8s.io/v1",
+        "kind": "RoleBinding",
+        "metadata": {"name": "test-rolebinding", "labels": {"user.kubeflow.org/enabled": "true"}},
+        "subjects": [{"kind": "ServiceAccount", "name": "seracc"}],
+        "roleRef": {"apiGroup": "rbac.authorization.k8s.io", "kind": "Role", "name": "test-role"},
+    },
 ]
 
 CORRECT_NAMESPACE_REQ = {
@@ -96,6 +115,8 @@ CORRECT_NAMESPACE_REQ = {
         "Secret.v1": [],
         "ServiceAccount.v1": [],
         "PodDefault.kubeflow.org/v1alpha1": [],
+        "Role.rbac.authorization.k8s.io/v1": [],
+        "RoleBinding.rbac.authorization.k8s.io/v1": [],
     },
 }
 
@@ -105,6 +126,8 @@ CORRECT_NAMESPACE_REQ_NO_RESYNC = {
         "Secret.v1": [{}, {}],
         "ServiceAccount.v1": [{}],
         "PodDefault.kubeflow.org/v1alpha1": [{}, {}],
+        "Role.rbac.authorization.k8s.io/v1": [{}],
+        "RoleBinding.rbac.authorization.k8s.io/v1": [{}],
     },
 }
 
@@ -114,6 +137,8 @@ WRONG_NAMESPACE_REQ = {
         "Secret.v1": [],
         "ServiceAccount.v1": [],
         "PodDefault.kubeflow.org/v1alpha1": [],
+        "Role.rbac.authorization.k8s.io/v1": [],
+        "RoleBinding.rbac.authorization.k8s.io/v1": [],
     },
 }
 
