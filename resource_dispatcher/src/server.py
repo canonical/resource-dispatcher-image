@@ -71,8 +71,10 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                 "resources-ready": str(
                     len(attachments["Secret.v1"]) == desired_secrets_count
                     and len(attachments["ServiceAccount.v1"]) == desired_svc_accounts_count
-                    and len(attachments["Role.v1"]) == desired_roles_count
-                    and len(attachments["RoleBinding.v1"]) == desired_role_bindings_count
+                    and len(attachments["Role.rbac.authorization.k8s.io/v1"])
+                    == desired_roles_count
+                    and len(attachments["RoleBinding.rbac.authorization.k8s.io/v1"])
+                    == desired_role_bindings_count
                     and len(attachments["PodDefault.kubeflow.org/v1alpha1"])
                     == desired_pod_defaults_count
                 )

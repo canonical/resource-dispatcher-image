@@ -32,7 +32,7 @@ class TestServer:
         """Test if server_factory creates HTTPServer object."""
         server = server_factory(PORT, LABEL, FOLDER)
 
-        assert type(server) == HTTPServer
+        assert type(server) is HTTPServer
         assert server.server_port == PORT
 
     def test_generate_manifests(self):
