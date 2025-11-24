@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-#
+
 
 """Unit tests for server module."""
 
@@ -32,13 +32,13 @@ class TestServer:
         """Test if server_factory creates HTTPServer object."""
         server = server_factory(PORT, LABEL, FOLDER)
 
-        assert type(server) == HTTPServer
+        assert type(server) is HTTPServer
         assert server.server_port == PORT
 
     def test_generate_manifests(self):
         """Test if function generates manifests for example folder."""
         manifests = generate_manifests(FOLDER, namespace="namespace")
-        assert len(manifests) == 5
+        assert len(manifests) == 7
         assert manifests[0]["metadata"]["namespace"] == "namespace"
 
     def test_generate_manifests_failure(self):
