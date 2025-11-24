@@ -195,11 +195,6 @@ def test_server_responses(server: HTTPServer, request_data, response_data, resyn
     url = f"http://{server_obj.server_address[0]}:{str(server_obj.server_address[1])}"
     response = requests.post(url, data=json.dumps(request_data))
     result = json.loads(response.text)
-    import logging
-
-    for at in result["attachments"]:
-        logging.error(at)
-
     assert response.status_code == 200
     assert result["status"] == response_data["status"]
     assert [i for i in response_data["attachments"] if i not in result["attachments"]] == []
