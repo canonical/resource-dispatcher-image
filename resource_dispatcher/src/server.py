@@ -10,6 +10,8 @@ import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import yaml
+from jinja2 import Template
+from jinja2.exceptions import TemplateError
 from yaml.parser import ParserError
 
 from .log import setup_custom_logger
@@ -114,7 +116,12 @@ def generate_manifests(manifest_folder: str, namespace: str) -> list[dict]:
     for manifest_file in manifest_files:
         with open(manifest_file) as f:
             try:
-                manifest = yaml.safe_load(f)
+                template = Template(f.read())
+                rendered_content = template.render(NAMESPACE=namespace)
+                manifest = yaml.safe_load(rendered_content)
+            except TemplateError as e:
+                logger.error(f"Error rendering template {manifest_file}: {e}")
+                raise
             except ParserError as e:
                 raise e
         manifest["metadata"]["namespace"] = namespace
