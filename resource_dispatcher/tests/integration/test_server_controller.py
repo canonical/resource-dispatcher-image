@@ -112,7 +112,7 @@ EXPECTED_ATTACHMENTS = [
             "labels": {"user.kubeflow.org/enabled": "true"},
             "namespace": "someName",
         },
-        "subjects": [{"kind": "ServiceAccount", "name": "seracc"}],
+        "subjects": [{"kind": "ServiceAccount", "name": "seracc", "namespace": "someName"}],
         "roleRef": {"apiGroup": "rbac.authorization.k8s.io", "kind": "Role", "name": "test-role"},
     },
 ]
