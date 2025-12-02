@@ -9,6 +9,7 @@ from http.server import HTTPServer
 from unittest.mock import MagicMock, patch
 
 import pytest
+from jinja2.exceptions import TemplateError
 from yaml.parser import ParserError
 
 from resource_dispatcher.src.server import generate_manifests, run_server, server_factory
@@ -17,6 +18,7 @@ PORT = 1234  # HTTPServer randomly assigns the port to a free port
 LABEL = "test.label"
 FOLDER = "./resource_dispatcher/tests/test_data_folder"
 FOLDER_CORRUPTED = "./resource_dispatcher/tests/test_data_folder_corrupted"
+FOLDER_INVALID_JINJA2 = "./resource_dispatcher/tests/test_data_folder_invalid_jinja"
 
 
 class TestServer:
@@ -45,3 +47,8 @@ class TestServer:
         """Test if function generates manifests for example folder."""
         with pytest.raises(ParserError):
             generate_manifests(FOLDER_CORRUPTED, namespace="namespace")
+
+    def test_generate_manifests_invalid_jinja2(self):
+        """Test if appropriate error is raised when Jinja2 template is invalid."""
+        with pytest.raises(TemplateError):
+            generate_manifests(FOLDER_INVALID_JINJA2, namespace="namespace")
