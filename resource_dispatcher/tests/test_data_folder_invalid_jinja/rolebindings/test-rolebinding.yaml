@@ -7,7 +7,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: seracc
-    namespace: '{{ NAMESPACE }}'
+    namespace: '{% if some-invalid-tags %}'
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
