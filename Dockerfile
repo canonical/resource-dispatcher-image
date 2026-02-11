@@ -22,7 +22,7 @@ COPY requirements.txt /app
 RUN set -eux; \
     pip3 install -r requirements.txt --no-cache-dir
 
-COPY ./resource_dispatcher /app 
+COPY --chown=584792:584792 --chmod=770 ./resource_dispatcher /app
 
 EXPOSE 80
 CMD ["python3", "main.py"]
