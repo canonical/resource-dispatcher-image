@@ -124,6 +124,21 @@ def generate_manifests(manifest_folder: str, namespace: str) -> list[dict]:
                 raise
             except ParserError as e:
                 raise e
-        manifest["metadata"]["namespace"] = namespace
+        metadata = manifest.get("metadata", {})
+        manifest_namespace = metadata.get("namespace")
+
+        # Keep resources that are either namespace-agnostic or already target the current namespace.
+        # Skip manifests pinned to a different namespace so profile-specific resources are not fanned out.
+        if manifest_namespace and manifest_namespace != namespace:
+            logger.info(
+                "Skipping manifest %s/%s for namespace %s because it targets namespace %s",
+                manifest.get("kind", "unknown"),
+                metadata.get("name", "unknown"),
+                namespace,
+                manifest_namespace,
+            )
+            continue
+
+        manifest.setdefault("metadata", {})["namespace"] = namespace
         manifests.append(manifest)
     return manifests
