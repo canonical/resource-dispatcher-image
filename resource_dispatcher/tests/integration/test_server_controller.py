@@ -247,7 +247,7 @@ def test_namespace_specific_manifest_applied(server):
 
 def test_namespace_agnostic_manifest_applied(server):
     """Verify namespace-agnostic manifests are rendered for each matching namespace."""
-    # Get manifests for two different namespaces
+    # Get manifests for two different namespaces (PROFILE_A and PROFILE_B)
     result_ns_a = _post_sync(server, _build_request(PROFILE_A))
     result_ns_b = _post_sync(server, _build_request(PROFILE_B))
 
