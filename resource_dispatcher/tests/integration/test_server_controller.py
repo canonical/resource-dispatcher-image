@@ -17,6 +17,10 @@ from resource_dispatcher.src.server import server_factory
 PORT = 0  # HTTPServer randomly assigns the port to a free port
 LABEL = "test.label"
 FOLDER = "./resource_dispatcher/tests/test_data_folder"
+PROFILE_A = "profile-a"
+PROFILE_B = "profile-b"
+PROFILE_A_SECRET = "profile-pinned-secret"
+PROFILE_AGNOSTIC_SECRET = "mlpipeline-minio-artifact"
 
 EXPECTED_ATTACHMENTS = [
     {
@@ -164,6 +168,29 @@ CORRECT_NAMESPACE_RESP_NO_RESYNC = {
 WRONG_NAMESPACE_RESP = {"status": {}, "attachments": []}
 
 
+def _build_request(namespace: str, attachments: dict | None = None) -> dict:
+    """Build a controller sync request for a given namespace."""
+    return {
+        "object": {"metadata": {"name": namespace, "labels": {LABEL: "true"}}},
+        "attachments": attachments
+        or {
+            "Secret.v1": [],
+            "ServiceAccount.v1": [],
+            "PodDefault.kubeflow.org/v1alpha1": [],
+            "Role.rbac.authorization.k8s.io/v1": [],
+            "RoleBinding.rbac.authorization.k8s.io/v1": [],
+        },
+    }
+
+
+def _post_sync(server: HTTPServer, request_data: dict) -> dict:
+    """Send a sync request to the server and return parsed JSON."""
+    url = f"http://{server.server_address[0]}:{str(server.server_address[1])}"
+    response = requests.post(url, data=json.dumps(request_data))
+    assert response.status_code == 200
+    return json.loads(response.text)
+
+
 @pytest.fixture(
     scope="function",
 )
@@ -191,11 +218,58 @@ def server():
 )
 def test_server_responses(server: HTTPServer, request_data, response_data, resync):
     """Test if server returns desired Kubernetes objects for given namespaces."""
-    server_obj = server
-    url = f"http://{server_obj.server_address[0]}:{str(server_obj.server_address[1])}"
-    response = requests.post(url, data=json.dumps(request_data))
-    result = json.loads(response.text)
-    assert response.status_code == 200
+    result = _post_sync(server, request_data)
     assert result["status"] == response_data["status"]
     assert [i for i in response_data["attachments"] if i not in result["attachments"]] == []
     assert ("resyncAfterSeconds" in result) == resync
+
+
+def test_namespace_specific_manifest_applied(server):
+    """Verify manifests with metadata.namespace are not fanned out to other namespaces."""
+    # Request manifests for the namespace that the profile-pinned-secret targets
+    results_a = _post_sync(server, _build_request(PROFILE_A))
+    # Request manifests for a different namespace
+    results_b = _post_sync(server, _build_request(PROFILE_B))
+
+    # Check that profile-pinned-secret appears in PROFILE_A but not in PROFILE_B
+    matches_a = any(
+        item["kind"] == "Secret" and item["metadata"]["name"] == PROFILE_A_SECRET
+        for item in results_a["attachments"]
+    )
+    matches_b = any(
+        item["kind"] == "Secret" and item["metadata"]["name"] == PROFILE_A_SECRET
+        for item in results_b["attachments"]
+    )
+
+    assert matches_a, f"{PROFILE_A_SECRET} should be in {PROFILE_A} namespace"
+    assert not matches_b, f"{PROFILE_A_SECRET} should not be in {PROFILE_B} namespace"
+
+
+def test_namespace_agnostic_manifest_applied(server):
+    """Verify namespace-agnostic manifests are rendered for each matching namespace."""
+    # Get manifests for two different namespaces
+    result_ns_a = _post_sync(server, _build_request(PROFILE_A))
+    result_ns_b = _post_sync(server, _build_request(PROFILE_B))
+
+    # Find a profile agnostic secret (e.g., mlpipeline-minio-artifact) in both results
+    matches_a = next(
+        (
+            item
+            for item in result_ns_a["attachments"]
+            if item["kind"] == "Secret" and item["metadata"]["name"] == PROFILE_AGNOSTIC_SECRET
+        ),
+        None,
+    )
+    matches_b = next(
+        (
+            item
+            for item in result_ns_b["attachments"]
+            if item["kind"] == "Secret" and item["metadata"]["name"] == PROFILE_AGNOSTIC_SECRET
+        ),
+        None,
+    )
+
+    assert matches_a is not None, f"Should find {PROFILE_AGNOSTIC_SECRET} in {PROFILE_A}"
+    assert matches_b is not None, f"Should find {PROFILE_AGNOSTIC_SECRET} in {PROFILE_B}"
+    assert matches_a["metadata"]["namespace"] == PROFILE_A, f"Namespace should be {PROFILE_A}"
+    assert matches_b["metadata"]["namespace"] == PROFILE_B, f"Namespace should be {PROFILE_B}"

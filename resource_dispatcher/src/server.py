@@ -110,7 +110,7 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
 
 def generate_manifests(manifest_folder: str, namespace: str) -> list[dict]:
     """For each file in templates_folder generate a yaml with populated context."""
-    manifest_files = glob.glob(f"{manifest_folder}/**/*.yaml")
+    manifest_files = glob.glob(f"{manifest_folder}/**/*.yaml", recursive=True)
     logger.info(f"found files {manifest_files}")
     manifests = []
     for manifest_file in manifest_files:
