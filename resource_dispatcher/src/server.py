@@ -71,13 +71,13 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
             # Just compares number of presented with expected manifests its not comparing contents
             desired_status = {
                 "resources-ready": str(
-                    len(attachments["Secret.v1"]) == desired_secrets_count
-                    and len(attachments["ServiceAccount.v1"]) == desired_svc_accounts_count
-                    and len(attachments["Role.rbac.authorization.k8s.io/v1"])
+                    len(attachments.get("Secret.v1", [])) == desired_secrets_count
+                    and len(attachments.get("ServiceAccount.v1", [])) == desired_svc_accounts_count
+                    and len(attachments.get("Role.rbac.authorization.k8s.io/v1", []))
                     == desired_roles_count
-                    and len(attachments["RoleBinding.rbac.authorization.k8s.io/v1"])
+                    and len(attachments.get("RoleBinding.rbac.authorization.k8s.io/v1", []))
                     == desired_role_bindings_count
-                    and len(attachments["PodDefault.kubeflow.org/v1alpha1"])
+                    and len(attachments.get("PodDefault.kubeflow.org/v1alpha1", []))
                     == desired_pod_defaults_count
                 )
             }

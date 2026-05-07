@@ -11,3 +11,4 @@ __pycache__/
 kubeconfig.tmp
 new_config
 .mypy_cache
+.python-version
