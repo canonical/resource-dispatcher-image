@@ -191,7 +191,7 @@ def _post_sync(server: HTTPServer, request_data: dict) -> dict:
     return json.loads(response.text)
 
 
-def _find_secret(result: dict, secret_name: str) -> dict | None:
+def _find_secret_in_controller_sync_result(result: dict, secret_name: str) -> dict | None:
     """Find a secret attachment by name in the controller sync result."""
     return next(
         (
@@ -246,7 +246,7 @@ def test_server_responses(server: HTTPServer, request_data, response_data, resyn
 def test_namespace_specific_manifest_applied(server, namespace, expected_secret):
     """Verify manifests with metadata.namespace are not fanned out to other namespaces."""
     result = _post_sync(server, _build_request(namespace))
-    matched_secret = _find_secret(result, PROFILE_A_SECRET)
+    matched_secret = _find_secret_in_controller_sync_result(result, PROFILE_A_SECRET)
 
     assert (matched_secret["metadata"]["name"] if matched_secret else None) == expected_secret, (
         f"{PROFILE_A_SECRET} presence mismatch for namespace {namespace}"
@@ -257,7 +257,7 @@ def test_namespace_specific_manifest_applied(server, namespace, expected_secret)
 def test_namespace_agnostic_manifest_applied(server, namespace):
     """Verify namespace-agnostic manifests are rendered for each matching namespace."""
     result = _post_sync(server, _build_request(namespace))
-    matched_secret = _find_secret(result, PROFILE_AGNOSTIC_SECRET)
+    matched_secret = _find_secret_in_controller_sync_result(result, PROFILE_AGNOSTIC_SECRET)
 
     assert matched_secret is not None, f"Should find {PROFILE_AGNOSTIC_SECRET} in {namespace}"
     assert matched_secret["metadata"]["namespace"] == namespace, f"Namespace should be {namespace}"
