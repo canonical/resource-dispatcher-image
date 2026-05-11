@@ -237,21 +237,20 @@ def test_server_responses(server: HTTPServer, request_data, response_data, resyn
 
 
 @pytest.mark.parametrize(
-    "namespace, expected_present",
+    "namespace, expected_secret",
     [
-        (PROFILE_A, True),
-        (PROFILE_B, False),
+        (PROFILE_A, PROFILE_A_SECRET),
+        (PROFILE_B, None),
     ],
 )
-def test_namespace_specific_manifest_applied(server, namespace, expected_present):
+def test_namespace_specific_manifest_applied(server, namespace, expected_secret):
     """Verify manifests with metadata.namespace are not fanned out to other namespaces."""
     result = _post_sync(server, _build_request(namespace))
     matched_secret = _find_secret(result, PROFILE_A_SECRET)
 
-    if expected_present:
-        assert matched_secret is not None, f"{PROFILE_A_SECRET} should be in {namespace} namespace"
-    else:
-        assert matched_secret is None, f"{PROFILE_A_SECRET} should not be in {namespace} namespace"
+    assert (matched_secret["metadata"]["name"] if matched_secret else None) == expected_secret, (
+        f"{PROFILE_A_SECRET} presence mismatch for namespace {namespace}"
+    )
 
 
 @pytest.mark.parametrize("namespace", [PROFILE_A, PROFILE_B])
