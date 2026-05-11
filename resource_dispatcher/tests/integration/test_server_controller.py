@@ -248,9 +248,9 @@ def test_namespace_specific_manifest_applied(server, namespace, expected_secret)
     result = _post_sync(server, _build_request(namespace))
     matched_secret = _find_secret_in_controller_sync_result(result, PROFILE_A_SECRET)
 
-    assert (matched_secret["metadata"]["name"] if matched_secret else None) == expected_secret, (
-        f"{PROFILE_A_SECRET} presence mismatch for namespace {namespace}"
-    )
+    assert (
+        matched_secret["metadata"]["name"] if matched_secret else None
+    ) == expected_secret, f"{PROFILE_A_SECRET} presence mismatch for namespace {namespace}"
 
 
 @pytest.mark.parametrize("namespace", [PROFILE_A, PROFILE_B])
