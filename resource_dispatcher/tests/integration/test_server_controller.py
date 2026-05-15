@@ -191,6 +191,18 @@ def _post_sync(server: HTTPServer, request_data: dict) -> dict:
     return json.loads(response.text)
 
 
+def _find_secret_in_controller_sync_result(result: dict, secret_name: str) -> dict | None:
+    """Find a secret attachment by name in the controller sync result."""
+    return next(
+        (
+            item
+            for item in result["attachments"]
+            if item["kind"] == "Secret" and item["metadata"]["name"] == secret_name
+        ),
+        None,
+    )
+
+
 @pytest.fixture(
     scope="function",
 )
@@ -224,52 +236,28 @@ def test_server_responses(server: HTTPServer, request_data, response_data, resyn
     assert ("resyncAfterSeconds" in result) == resync
 
 
-def test_namespace_specific_manifest_applied(server):
+@pytest.mark.parametrize(
+    "namespace, expected_secret",
+    [
+        (PROFILE_A, PROFILE_A_SECRET),
+        (PROFILE_B, None),
+    ],
+)
+def test_namespace_specific_manifest_applied(server, namespace, expected_secret):
     """Verify manifests with metadata.namespace are not fanned out to other namespaces."""
-    # Request manifests for the namespace that the profile-pinned-secret targets
-    results_a = _post_sync(server, _build_request(PROFILE_A))
-    # Request manifests for a different namespace
-    results_b = _post_sync(server, _build_request(PROFILE_B))
+    result = _post_sync(server, _build_request(namespace))
+    matched_secret = _find_secret_in_controller_sync_result(result, PROFILE_A_SECRET)
 
-    # Check that profile-pinned-secret appears in PROFILE_A but not in PROFILE_B
-    matches_a = any(
-        item["kind"] == "Secret" and item["metadata"]["name"] == PROFILE_A_SECRET
-        for item in results_a["attachments"]
-    )
-    matches_b = any(
-        item["kind"] == "Secret" and item["metadata"]["name"] == PROFILE_A_SECRET
-        for item in results_b["attachments"]
-    )
-
-    assert matches_a, f"{PROFILE_A_SECRET} should be in {PROFILE_A} namespace"
-    assert not matches_b, f"{PROFILE_A_SECRET} should not be in {PROFILE_B} namespace"
+    assert (
+        matched_secret["metadata"]["name"] if matched_secret else None
+    ) == expected_secret, f"{PROFILE_A_SECRET} presence mismatch for namespace {namespace}"
 
 
-def test_namespace_agnostic_manifest_applied(server):
+@pytest.mark.parametrize("namespace", [PROFILE_A, PROFILE_B])
+def test_namespace_agnostic_manifest_applied(server, namespace):
     """Verify namespace-agnostic manifests are rendered for each matching namespace."""
-    # Get manifests for two different namespaces (PROFILE_A and PROFILE_B)
-    result_ns_a = _post_sync(server, _build_request(PROFILE_A))
-    result_ns_b = _post_sync(server, _build_request(PROFILE_B))
+    result = _post_sync(server, _build_request(namespace))
+    matched_secret = _find_secret_in_controller_sync_result(result, PROFILE_AGNOSTIC_SECRET)
 
-    # Find a profile agnostic secret (e.g., mlpipeline-minio-artifact) in both results
-    matches_a = next(
-        (
-            item
-            for item in result_ns_a["attachments"]
-            if item["kind"] == "Secret" and item["metadata"]["name"] == PROFILE_AGNOSTIC_SECRET
-        ),
-        None,
-    )
-    matches_b = next(
-        (
-            item
-            for item in result_ns_b["attachments"]
-            if item["kind"] == "Secret" and item["metadata"]["name"] == PROFILE_AGNOSTIC_SECRET
-        ),
-        None,
-    )
-
-    assert matches_a is not None, f"Should find {PROFILE_AGNOSTIC_SECRET} in {PROFILE_A}"
-    assert matches_b is not None, f"Should find {PROFILE_AGNOSTIC_SECRET} in {PROFILE_B}"
-    assert matches_a["metadata"]["namespace"] == PROFILE_A, f"Namespace should be {PROFILE_A}"
-    assert matches_b["metadata"]["namespace"] == PROFILE_B, f"Namespace should be {PROFILE_B}"
+    assert matched_secret is not None, f"Should find {PROFILE_AGNOSTIC_SECRET} in {namespace}"
+    assert matched_secret["metadata"]["namespace"] == namespace, f"Namespace should be {namespace}"
