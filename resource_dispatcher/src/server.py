@@ -71,13 +71,13 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
             # Just compares number of presented with expected manifests its not comparing contents
             desired_status = {
                 "resources-ready": str(
-                    len(attachments["Secret.v1"]) == desired_secrets_count
-                    and len(attachments["ServiceAccount.v1"]) == desired_svc_accounts_count
-                    and len(attachments["Role.rbac.authorization.k8s.io/v1"])
+                    len(attachments.get("Secret.v1", [])) == desired_secrets_count
+                    and len(attachments.get("ServiceAccount.v1", [])) == desired_svc_accounts_count
+                    and len(attachments.get("Role.rbac.authorization.k8s.io/v1", []))
                     == desired_roles_count
-                    and len(attachments["RoleBinding.rbac.authorization.k8s.io/v1"])
+                    and len(attachments.get("RoleBinding.rbac.authorization.k8s.io/v1", []))
                     == desired_role_bindings_count
-                    and len(attachments["PodDefault.kubeflow.org/v1alpha1"])
+                    and len(attachments.get("PodDefault.kubeflow.org/v1alpha1", []))
                     == desired_pod_defaults_count
                 )
             }
@@ -110,7 +110,7 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
 
 def generate_manifests(manifest_folder: str, namespace: str) -> list[dict]:
     """For each file in templates_folder generate a yaml with populated context."""
-    manifest_files = glob.glob(f"{manifest_folder}/**/*.yaml")
+    manifest_files = glob.glob(f"{manifest_folder}/**/*.yaml", recursive=True)
     logger.info(f"found files {manifest_files}")
     manifests = []
     for manifest_file in manifest_files:
@@ -124,6 +124,23 @@ def generate_manifests(manifest_folder: str, namespace: str) -> list[dict]:
                 raise
             except ParserError as e:
                 raise e
-        manifest["metadata"]["namespace"] = namespace
+        metadata = manifest.get("metadata", {})
+        manifest_namespace = metadata.get("namespace")
+
+        # Keep resources that are either namespace-agnostic
+        # or already target the current namespace.
+        # Skip manifests pinned to a different namespace
+        # so profile-specific resources are not fanned out.
+        if manifest_namespace and manifest_namespace != namespace:
+            logger.info(
+                "Skipping manifest %s/%s for namespace %s because it targets namespace %s",
+                manifest.get("kind", "unknown"),
+                metadata.get("name", "unknown"),
+                namespace,
+                manifest_namespace,
+            )
+            continue
+
+        manifest.setdefault("metadata", {})["namespace"] = namespace
         manifests.append(manifest)
     return manifests
