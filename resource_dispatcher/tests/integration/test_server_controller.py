@@ -119,6 +119,15 @@ EXPECTED_ATTACHMENTS = [
         "subjects": [{"kind": "ServiceAccount", "name": "seracc", "namespace": "someName"}],
         "roleRef": {"apiGroup": "rbac.authorization.k8s.io", "kind": "Role", "name": "test-role"},
     },
+    {
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {"name": "test-configmap", "labels": {"user.kubeflow.org/enabled": "true"}},
+        "data": {
+            "defaultPipelineRoot": "minio://mlpipeline",
+            "providers": "minio:\n  default:\n    endpoint: minio:9000.test-kubeflow\n    region: minio\n    credentials:\n      fromEnv: false\n      secretRef:\n        secretName: mlpipeline-minio-artifact\n        accessKeyKey: accesskey\n        secretKeyKey: secretkey",
+        },
+    },
 ]
 
 CORRECT_NAMESPACE_REQ = {

@@ -49,6 +49,7 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
             desired_pod_defaults_count = 0
             desired_roles_count = 0
             desired_role_bindings_count = 0
+            desired_config_maps_count = 0
 
             desired_resources = []
             try:
@@ -67,6 +68,8 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                     desired_roles_count += 1
                 elif resource["kind"] == "RoleBinding":
                     desired_role_bindings_count += 1
+                elif resource["kind"] == "ConfigMap":
+                    desired_config_maps_count += 1
 
             # Just compares number of presented with expected manifests its not comparing contents
             desired_status = {
@@ -79,6 +82,7 @@ def server_factory(controller_port: int, label: str, folder: str, url: str = "")
                     == desired_role_bindings_count
                     and len(attachments.get("PodDefault.kubeflow.org/v1alpha1", []))
                     == desired_pod_defaults_count
+                    and len(attachments.get("ConfigMap.v1", [])) == desired_config_maps_count
                 )
             }
             resync_after = (
