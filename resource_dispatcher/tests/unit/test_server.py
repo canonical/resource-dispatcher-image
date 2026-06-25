@@ -40,7 +40,7 @@ class TestServer:
     def test_generate_manifests(self):
         """Test if function generates manifests for example folder."""
         manifests = generate_manifests(FOLDER, namespace="namespace")
-        assert len(manifests) == 7
+        assert len(manifests) == 8
         assert manifests[0]["metadata"]["namespace"] == "namespace"
 
     def test_generate_manifests_failure(self):
