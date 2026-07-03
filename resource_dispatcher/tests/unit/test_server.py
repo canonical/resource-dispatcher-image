@@ -59,7 +59,7 @@ class TestServer:
             generate_manifests(FOLDER_INVALID_JINJA2, namespace="namespace")
 
     def test_generate_manifests_pinned_overrides_global(self):
-        """Pinned manifest wins over global when both share the same name in the target namespace."""
+        """Pinned manifest overrides global in same target namespace."""
         manifests = generate_manifests(FOLDER, namespace="profile-a")
         artifact_secrets = [
             m
@@ -67,7 +67,7 @@ class TestServer:
             if m["kind"] == "Secret" and m["metadata"]["name"] == "mlpipeline-minio-artifact"
         ]
         assert len(artifact_secrets) == 1, "Expected exactly one mlpipeline-minio-artifact secret"
-        assert artifact_secrets[0]["stringData"]["AWS_ACCESS_KEY_ID"] == "pinned-access-key"
+        assert artifact_secrets[0]["stringData"]["accesskey"] == "pinned-access-key"
 
     def test_generate_manifests_global_applied_when_no_override(self):
         """Global manifest is used as-is when there is no pinned override for the namespace."""
@@ -78,7 +78,7 @@ class TestServer:
             if m["kind"] == "Secret" and m["metadata"]["name"] == "mlpipeline-minio-artifact"
         ]
         assert len(artifact_secrets) == 1, "Expected exactly one mlpipeline-minio-artifact secret"
-        assert artifact_secrets[0]["stringData"]["AWS_ACCESS_KEY_ID"] == "value"
+        assert artifact_secrets[0]["stringData"]["accesskey"] == "value"
 
 
 class TestResolveManifestConflicts:
@@ -89,7 +89,7 @@ class TestResolveManifestConflicts:
             "apiVersion": "v1",
             "kind": "Secret",
             "metadata": {"name": name, "namespace": "ns"},
-            "stringData": {"AWS_ACCESS_KEY_ID": access_key},
+            "stringData": {"accesskey": access_key},
         }
 
     def test_no_conflict_returns_all(self):
@@ -109,7 +109,7 @@ class TestResolveManifestConflicts:
         candidates = [(False, global_m), (True, pinned_m)]
         result = _resolve_manifest_conflicts(candidates, "ns")
         assert len(result) == 1
-        assert result[0]["stringData"]["AWS_ACCESS_KEY_ID"] == "pinned"
+        assert result[0]["stringData"]["accesskey"] == "pinned"
 
     def test_global_only_returned_when_no_pinned(self):
         """A global manifest is returned as-is when there is no pinned counterpart."""
@@ -117,7 +117,7 @@ class TestResolveManifestConflicts:
         candidates = [(False, global_m)]
         result = _resolve_manifest_conflicts(candidates, "ns")
         assert len(result) == 1
-        assert result[0]["stringData"]["AWS_ACCESS_KEY_ID"] == "global"
+        assert result[0]["stringData"]["accesskey"] == "global"
 
     def test_multiple_pinned_same_name_keeps_first(self):
         """When multiple pinned manifests share a name, only the first is kept."""
@@ -126,4 +126,4 @@ class TestResolveManifestConflicts:
         candidates = [(True, pinned_a), (True, pinned_b)]
         result = _resolve_manifest_conflicts(candidates, "ns")
         assert len(result) == 1
-        assert result[0]["stringData"]["AWS_ACCESS_KEY_ID"] == "first"
+        assert result[0]["stringData"]["accesskey"] == "first"

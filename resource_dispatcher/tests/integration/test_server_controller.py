@@ -30,13 +30,13 @@ EXPECTED_ATTACHMENTS = [
         "apiVersion": "v1",
         "kind": "Secret",
         "metadata": {"name": "mlpipeline-minio-artifact2", "namespace": "someName"},
-        "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
+        "stringData": {"accesskey": "value", "secretkey": "value"},
     },
     {
         "apiVersion": "v1",
         "kind": "Secret",
         "metadata": {"name": "mlpipeline-minio-artifact", "namespace": "someName"},
-        "stringData": {"AWS_ACCESS_KEY_ID": "value", "AWS_SECRET_ACCESS_KEY": "value"},
+        "stringData": {"accesskey": "value", "secretkey": "value"},
     },
     {
         "apiVersion": "v1",
@@ -300,7 +300,7 @@ def test_conflict_resolution_pinned_overrides_global(server, namespace, expected
     assert (
         matched_secret is not None
     ), f"Should find '{CONFLICT_SECRET_NAME}' in namespace '{namespace}'"
-    assert matched_secret["stringData"]["AWS_ACCESS_KEY_ID"] == expected_access_key, (
+    assert matched_secret["stringData"]["accesskey"] == expected_access_key, (
         f"Expected access key '{expected_access_key}' for namespace '{namespace}', "
-        f"got '{matched_secret['stringData']['AWS_ACCESS_KEY_ID']}'"
+        f"got '{matched_secret['stringData']['accesskey']}'"
     )
