@@ -192,7 +192,7 @@ def _resolve_manifest_conflicts(candidates: list[tuple[bool, dict]], namespace: 
             result.extend(pinned)
         elif pinned:
             if len(pinned) > 1:
-                logger.warning(
+                logger.error(
                     "Multiple namespace-pinned manifests found for name '%s' in namespace '%s'; "
                     "using the first one.",
                     name,
