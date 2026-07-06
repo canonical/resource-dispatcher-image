@@ -182,24 +182,29 @@ def _resolve_manifest_conflicts(candidates: list[tuple[bool, dict]], namespace: 
         pinned = [m for is_pinned, m in group if is_pinned]
         unpinned = [m for is_pinned, m in group if not is_pinned]
 
-        if pinned and unpinned:
-            logger.info(
-                "Manifest '%s' has both a namespace-pinned and a global version for namespace "
-                "'%s'; using the namespace-pinned version.",
-                name,
-                namespace,
-            )
-            result.extend(pinned)
-        elif pinned:
+        if pinned:
+            if unpinned:
+                logger.info(
+                    "Manifest '%s' has both a namespace-pinned and a global version for namespace "
+                    "'%s'; using the namespace-pinned version.",
+                    name,
+                    namespace,
+                )
             if len(pinned) > 1:
-                logger.error(
+                logger.warning(
                     "Multiple namespace-pinned manifests found for name '%s' in namespace '%s'; "
                     "using the first one.",
                     name,
                     namespace,
                 )
             result.append(pinned[0])
-        else:
-            result.extend(unpinned)
+        elif unpinned:
+            if len(unpinned) > 1:
+                logger.warning(
+                    "Multiple global manifests found for name '%s' in namespace '%s'; using the first one.",
+                    name,
+                    namespace,
+                )
+            result.append(unpinned[0])
 
     return result
