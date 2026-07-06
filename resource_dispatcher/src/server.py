@@ -172,6 +172,7 @@ def _resolve_manifest_conflicts(candidates: list[tuple[bool, dict]], namespace: 
     Returns:
         Deduplicated manifest list.
     """
+    # Get manifests by name first
     by_name: dict[str, list[tuple[bool, dict]]] = {}
     for is_pinned, manifest in candidates:
         name = manifest.get("metadata", {}).get("name")
@@ -201,7 +202,8 @@ def _resolve_manifest_conflicts(candidates: list[tuple[bool, dict]], namespace: 
         elif unpinned:
             if len(unpinned) > 1:
                 logger.warning(
-                    "Multiple global manifests found for name '%s' in namespace '%s'; using the first one.",
+                    "Multiple global manifests found for name '%s' in namespace '%s'; "
+                    "using the first one.",
                     name,
                     namespace,
                 )
